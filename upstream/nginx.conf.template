@@ -60,7 +60,7 @@ server {
 <li>Browser fell back to HTTP, then got redirected here</li>
 <li>This HTTPS site has a valid certificate (for attacker domain)</li>
 <li>Users see the lock icon and trust it</li>
-<li>Domain confusion: users don'\''t always check the URL carefully</li>
+<li>Domain confusion: users dont always check the URL carefully</li>
 </ul>
 </div>
 
