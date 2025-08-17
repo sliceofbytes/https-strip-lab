@@ -1,15 +1,8 @@
 worker_processes auto;
-env HSTS;                           # top-level
 
 events { worker_connections 1024; }
 
 http {
-  # Map ENV -> header text into a uniquely-named var to avoid cycles
-  map $HSTS $hsts_value {
-    default "";
-    on "max-age=31536000; includeSubDomains; preload";
-  }
-
   server {
     listen 443 ssl;
     server_name _;
@@ -17,12 +10,13 @@ http {
     ssl_certificate     /etc/nginx/certs/victim.local.crt;
     ssl_certificate_key /etc/nginx/certs/victim.local.key;
 
-    add_header Strict-Transport-Security $hsts_value always;
+    # This will be replaced by envsubst
+    add_header Strict-Transport-Security "${HSTS_HEADER}" always;
 
     root /usr/share/nginx/html;
     index index.html;
 
-    location /          { try_files $uri /index.html; }
+    location / { try_files $uri /index.html; }
     location = /secure   { return 200 "secure content\n"; }
     location = /insecure { return 200 "insecure content\n"; }
   }
