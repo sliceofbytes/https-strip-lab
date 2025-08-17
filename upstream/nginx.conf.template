@@ -1,73 +1,119 @@
 server {
-  listen 443 ssl;
+  listen 8443 ssl;
   server_name _;
 
-  ssl_certificate /etc/nginx/certs/victim.local.crt;
-  ssl_certificate_key /etc/nginx/certs/victim.local.key;
+  # Use a certificate that matches the Play with Docker domain
+  # This simulates an attacker who has obtained a valid certificate for their domain
+  ssl_certificate /etc/nginx/certs/attacker.crt;
+  ssl_certificate_key /etc/nginx/certs/attacker.key;
   ssl_protocols TLSv1.2 TLSv1.3;
 
-  # Real site has proper security headers
-  add_header Strict-Transport-Security "${HSTS_HEADER}" always;
+  # Attacker's site looks legitimate with proper security headers
+  add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
   add_header X-Frame-Options "DENY" always;
   add_header X-Content-Type-Options "nosniff" always;
-  add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+  add_header X-Attacker-Site "true" always;
 
   root /usr/share/nginx/html;
   index index.html;
 
-  location / { 
-    try_files $uri /index.html; 
-  }
-  
-  location = /secure { 
+  # Fake victim site that looks legitimate
+  location /victim-site {
     return 200 '<!DOCTYPE html>
-<html><head><title>Legitimate victim.local</title>
-<style>body{font-family:sans-serif;padding:20px;background:#e6ffe6;}</style>
+<html><head><title>Secure Login - victim.com</title>
+<style>
+  body { font-family: sans-serif; padding: 20px; background: #f8f9fa; }
+  .secure { background: #d4edda; padding: 15px; border: 1px solid #28a745; margin: 15px 0; }
+  .form-container { background: white; padding: 20px; border: 1px solid #ddd; max-width: 400px; }
+  input { padding: 10px; width: 100%; margin: 10px 0; border: 1px solid #ddd; }
+  button { padding: 12px 20px; background: #28a745; color: white; border: none; width: 100%; }
+</style>
 </head>
 <body>
-<h1>🔒 REAL victim.local - Secure Content</h1>
-<div style="background:#d4edda;padding:15px;margin:15px 0;border:1px solid #28a745;">
-<h3>✅ This is the legitimate site!</h3>
+<h1>victim.com - Secure Portal</h1>
+
+<div class="secure">
+<h3>Secure Connection Established</h3>
+<p><strong>This site appears secure because:</strong></p>
 <ul>
-<li>✅ Correct domain: victim.local</li>
-<li>✅ Valid SSL certificate</li>
-<li>✅ HSTS enabled</li>
-<li>✅ Security headers present</li>
-<li>✅ Encrypted connection</li>
+<li>Valid HTTPS certificate</li>
+<li>Legitimate-looking domain</li>
+<li>Security headers present</li>
+<li>Green lock icon in browser</li>
 </ul>
 </div>
-<p><strong>Compare this with the attack sites:</strong></p>
+
+<div class="form-container">
+<h3>Login to Your Account</h3>
+<form method="get" action="/steal-secure-creds">
+<input type="text" name="username" placeholder="Username" required>
+<input type="password" name="password" placeholder="Password" required>
+<button type="submit">Secure Login</button>
+</form>
+</div>
+
+<div style="background: #fff3cd; padding: 10px; margin: 15px 0; border: 1px solid #ffeaa7;">
+<h4>Attack Analysis:</h4>
+<p><strong>Why this attack works:</strong></p>
 <ul>
-<li>HTTP Attack: No encryption, obviously malicious</li>
-<li>Fake HTTPS: Wrong certificate domain, security warnings</li>
-<li>This site: Everything correct and secure</li>
+<li>User typed https://victim.com but DNS was poisoned</li>
+<li>Browser fell back to HTTP, then got redirected here</li>
+<li>This HTTPS site has a valid certificate (for attacker domain)</li>
+<li>Users see the lock icon and trust it</li>
+<li>Domain confusion: users don'\''t always check the URL carefully</li>
 </ul>
-<p><small>URL: https://victim.local/secure</small></p>
+</div>
+
+<p><small>Notice: Check the certificate details and domain name!</small></p>
 </body></html>';
   }
 
-  location = /login {
+  # Handle credential theft on the "secure" site
+  location = /steal-secure-creds {
     return 200 '<!DOCTYPE html>
-<html><head><title>Secure Login - victim.local</title>
-<style>body{font-family:sans-serif;padding:20px;background:#e6ffe6;}input{padding:8px;width:200px;margin:5px;}</style>
+<html><head><title>Advanced Attack Successful!</title>
+<style>body{font-family:sans-serif;padding:20px;background:#ffe6e6;}</style>
 </head>
 <body>
-<h2>🔒 Secure Login - Real victim.local</h2>
-<div style="background:#d4edda;padding:10px;margin:10px 0;border:1px solid #28a745;">
-<strong>✅ Secure Connection:</strong> Your data is encrypted and safe!
-</div>
-<form method="post" action="/process-login">
-<p>Username: <input type="text" name="username" placeholder="Username" required></p>
-<p>Password: <input type="password" name="password" placeholder="Password" required></p>
-<p><button type="submit" style="padding:10px 20px;background:#28a745;color:white;border:none;">Secure Login</button></p>
-</form>
-<p><strong>Security indicators to check:</strong></p>
+<h2>Advanced HTTPS Attack Successful!</h2>
+
+<div style="background: #f8d7da; padding: 15px; border: 1px solid #f5c6cb; margin: 15px 0;">
+<h3>Credentials Captured via "Secure" HTTPS:</h3>
 <ul>
-<li>🔒 Lock icon in address bar</li>
-<li>📋 Certificate matches domain</li>
-<li>🌐 URL shows https://victim.local</li>
-<li>⚡ HSTS prevents downgrades</li>
+<li><strong>Username:</strong> <code>$arg_username</code></li>
+<li><strong>Password:</strong> <code>$arg_password</code></li>
+<li><strong>Attack Method:</strong> HTTPS with valid certificate</li>
+<li><strong>Domain:</strong> $host (not victim.com!)</li>
+<li><strong>User IP:</strong> $remote_addr</li>
 </ul>
+</div>
+
+<div style="background: #fff3cd; padding: 15px; border: 1px solid #ffeaa7; margin: 15px 0;">
+<h3>Why This Attack Succeeded:</h3>
+<ol>
+<li><strong>DNS Poisoning:</strong> victim.com pointed to attacker IP</li>
+<li><strong>Protocol Downgrade:</strong> HTTPS → HTTP → HTTPS redirect</li>
+<li><strong>Valid Certificate:</strong> HTTPS site has legitimate SSL cert</li>
+<li><strong>User Trust:</strong> Lock icon made it look secure</li>
+<li><strong>Domain Confusion:</strong> Users didn'\''t verify the actual domain</li>
+</ol>
+</div>
+
+<h3>How to Protect Against This:</h3>
+<ul>
+<li>Always verify the domain name in the address bar</li>
+<li>Check certificate details (click the lock icon)</li>
+<li>Use HSTS to prevent protocol downgrades</li>
+<li>Use DNS over HTTPS (DoH) to prevent DNS poisoning</li>
+<li>Be suspicious of unexpected redirects</li>
+</ul>
+
+<p><a href="/victim-site">← Back to fake login</a></p>
 </body></html>';
+  }
+
+  # Default page
+  location / {
+    return 302 /victim-site;
   }
 }

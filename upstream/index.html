@@ -12,15 +12,15 @@
   </style>
 </head>
 <body>
-  <h1>🚨 DNS Poisoning Attack Demo</h1>
+  <h1>DNS Poisoning Attack Demo</h1>
   
   <div class="warning">
-    <h2>⚠️ Demo Purpose</h2>
+    <h2>Demo Purpose</h2>
     <p>This demonstrates how DNS poisoning can downgrade HTTPS to HTTP, enabling man-in-the-middle attacks.</p>
   </div>
 
   <div class="attack">
-    <h2>🎯 Attack Scenario</h2>
+    <h2>Attack Scenario</h2>
     <p><strong>Current page:</strong> <span id="currentUrl"></span></p>
     <p><strong>Protocol:</strong> <span id="protocol"></span></p>
     <p><strong>Security:</strong> <span id="security"></span></p>
@@ -28,8 +28,8 @@
 
   <h2>🔗 Demo Links</h2>
   <ul>
-    <li><a href="/phish">🎣 Fake Login Page (HTTP)</a></li>
-    <li><a href="/legitimate">🔒 Compare with Legitimate Site (HTTPS)</a></li>
+    <li><a href="/phish">Fake Login Page (HTTP)</a></li>
+    <li><a href="/legitimate">Compare with Legitimate Site (HTTPS)</a></li>
   </ul>
 
   <script>
@@ -39,8 +39,8 @@
     
     const isSecure = window.location.protocol === 'https:';
     document.getElementById('security').textContent = isSecure ? 
-      '✅ Encrypted (Safe)' : 
-      '❌ Unencrypted (Vulnerable to attacks!)';
+      'Encrypted (Safe)' : 
+      'Unencrypted (Vulnerable to attacks!)';
     
     // Change styling based on security
     if (!isSecure) {

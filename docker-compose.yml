@@ -1,25 +1,21 @@
 services:
-  # ATTACKER'S PROXY - DNS poisoning endpoint
+  # HTTP Proxy - Handles the downgrade attack
   proxy:
     image: nginx:alpine
-    container_name: attacker_proxy
+    container_name: downgrade_proxy
     ports: 
-      - "80:80"      # HTTP - DNS poisoning landing
-      - "8443:8443"  # HTTPS - Attacker's fake secure site  
-      - "9443:9443"  # HTTPS - Proxy to real legitimate site
+      - "80:80"      # HTTP - Where victims land when HTTPS fails
     volumes:
       - ./proxy/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./certs:/etc/nginx/certs:ro
-    depends_on:
-      upstream:
-        condition: service_healthy
     networks: 
       - attack_net
 
-  # LEGITIMATE UPSTREAM SERVER
-  upstream:
+  # Attacker's HTTPS Site - Looks legitimate with valid cert
+  attacker_https:
     image: nginx:alpine
-    container_name: legitimate_server
+    container_name: attacker_https_site
+    ports:
+      - "8443:8443"  # HTTPS - Attacker's "legitimate" site
     environment:
       HSTS: "on"
       HSTS_HEADER: "max-age=31536000; includeSubDomains; preload"
@@ -29,14 +25,14 @@ services:
       - ./certs:/etc/nginx/certs:ro
       - ./upstream/init.sh:/docker-entrypoint.d/10-init-hsts.sh:ro
     healthcheck:
-      test: ["CMD", "sh", "-c", "apk add --no-cache curl >/dev/null 2>&1 || true; curl -kfs https://localhost/secure"]
+      test: ["CMD", "sh", "-c", "apk add --no-cache curl >/dev/null 2>&1 || true; curl -kfs https://localhost:8443/victim-site"]
       interval: 5s
       timeout: 3s
       retries: 12
     networks:
       attack_net:
         aliases:
-          - upstream
+          - attacker_https
     restart: unless-stopped
 
 networks:

@@ -2,46 +2,42 @@
 
 set -e
 
-echo "=== Generating SSL certificates for DNS poisoning demo ==="
+echo "Generating SSL certificate for HTTPS downgrade attack demo"
+echo "============================================================="
 
 mkdir -p certs
 
-# Generate legitimate victim.local certificate
-if [ ! -f "certs/victim.local.crt" ]; then
-    echo "1️⃣ Generating legitimate victim.local certificate..."
+# Generate attacker's certificate that could match Play with Docker domain
+# In a real attack, this would be a valid certificate for the attacker's domain
+if [ ! -f "certs/attacker.crt" ]; then
+    echo "Generating attacker's certificate..."
+    echo "This simulates an attacker who has a valid certificate for their domain"
+    
+    # Create certificate that looks legitimate
     openssl req -x509 -nodes -newkey rsa:2048 -days 365 \
-      -subj "/CN=victim.local/O=Victim Company Inc/C=US/ST=California/L=San Francisco" \
-      -keyout certs/victim.local.key \
-      -out certs/victim.local.crt
-    echo "✅ victim.local certificate created"
+      -subj "/CN=*.direct.labs.play-with-docker.com/O=Attacker Corp/C=US/ST=California/L=San Francisco" \
+      -keyout certs/attacker.key \
+      -out certs/attacker.crt
+    
+    echo "Success: Attacker certificate generated"
 else
-    echo "✅ victim.local certificate already exists"
-fi
-
-# Generate attacker's certificate (different domain)
-if [ ! -f "certs/attacker.local.crt" ]; then
-    echo "2️⃣ Generating attacker.local certificate..."
-    openssl req -x509 -nodes -newkey rsa:2048 -days 365 \
-      -subj "/CN=attacker.local/O=Malicious Corp/C=US/ST=Nevada/L=Las Vegas" \
-      -keyout certs/attacker.local.key \
-      -out certs/attacker.local.crt
-    echo "✅ attacker.local certificate created"
-else
-    echo "✅ attacker.local certificate already exists"
+    echo "Success: Attacker certificate already exists"
 fi
 
 echo ""
-echo "📋 Certificate Summary:"
-echo "========================"
-echo "Legitimate site certificate:"
-openssl x509 -in certs/victim.local.crt -subject -noout
-echo ""
-echo "Attacker site certificate:"
-openssl x509 -in certs/attacker.local.crt -subject -noout
+echo "  Certificate Details:"
+openssl x509 -in certs/attacker.crt -text -noout | grep -E "(Subject:|Issuer:|Not After)"
 
 echo ""
-echo "📁 Files created:"
+echo "Files created:"
 ls -la certs/
 
 echo ""
-echo "✅ Certificate generation complete!"
+echo "Success: Certificate setup complete!"
+echo ""
+echo "Attack Flow:"
+echo "1. User types: https://example...direct.labs.play-with-docker.com/secure"
+echo "2. DNS poisoning points to your server"
+echo "3. No HTTPS service on port 443 → Browser falls back to HTTP (port 80)"
+echo "4. HTTP site redirects to fake HTTPS site (port 8443)"
+echo "5. Fake HTTPS site has 'valid' certificate and steals credentials"
