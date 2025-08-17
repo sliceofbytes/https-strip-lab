@@ -8,4 +8,4 @@ else
 fi
 
 echo "HSTS setting: $HSTS"
-echo "HSTS_HEADER: $HSTS_HEADER"
+echo "HSTS_HEADER: '$HSTS_HEADER'"
