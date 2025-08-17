@@ -96,7 +96,7 @@ server {
 <li><strong>Protocol Downgrade:</strong> HTTPS → HTTP → HTTPS redirect</li>
 <li><strong>Valid Certificate:</strong> HTTPS site has legitimate SSL cert</li>
 <li><strong>User Trust:</strong> Lock icon made it look secure</li>
-<li><strong>Domain Confusion:</strong> Users didn'\''t verify the actual domain</li>
+<li><strong>Domain Confusion:</strong> Users didnt verify the actual domain</li>
 </ol>
 </div>
 
