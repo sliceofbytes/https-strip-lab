@@ -1,12 +1,73 @@
 server {
   listen 443 ssl;
   server_name _;
-  ssl_certificate     /etc/nginx/certs/victim.local.crt;
+
+  ssl_certificate /etc/nginx/certs/victim.local.crt;
   ssl_certificate_key /etc/nginx/certs/victim.local.key;
+  ssl_protocols TLSv1.2 TLSv1.3;
+
+  # Real site has proper security headers
   add_header Strict-Transport-Security "${HSTS_HEADER}" always;
+  add_header X-Frame-Options "DENY" always;
+  add_header X-Content-Type-Options "nosniff" always;
+  add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
   root /usr/share/nginx/html;
   index index.html;
-  location / { try_files $uri /index.html; }
-  location = /secure   { return 200 "secure content\n"; }
-  location = /insecure { return 200 "insecure content\n"; }
+
+  location / { 
+    try_files $uri /index.html; 
+  }
+  
+  location = /secure { 
+    return 200 '<!DOCTYPE html>
+<html><head><title>Legitimate victim.local</title>
+<style>body{font-family:sans-serif;padding:20px;background:#e6ffe6;}</style>
+</head>
+<body>
+<h1>🔒 REAL victim.local - Secure Content</h1>
+<div style="background:#d4edda;padding:15px;margin:15px 0;border:1px solid #28a745;">
+<h3>✅ This is the legitimate site!</h3>
+<ul>
+<li>✅ Correct domain: victim.local</li>
+<li>✅ Valid SSL certificate</li>
+<li>✅ HSTS enabled</li>
+<li>✅ Security headers present</li>
+<li>✅ Encrypted connection</li>
+</ul>
+</div>
+<p><strong>Compare this with the attack sites:</strong></p>
+<ul>
+<li>HTTP Attack: No encryption, obviously malicious</li>
+<li>Fake HTTPS: Wrong certificate domain, security warnings</li>
+<li>This site: Everything correct and secure</li>
+</ul>
+<p><small>URL: https://victim.local/secure</small></p>
+</body></html>';
+  }
+
+  location = /login {
+    return 200 '<!DOCTYPE html>
+<html><head><title>Secure Login - victim.local</title>
+<style>body{font-family:sans-serif;padding:20px;background:#e6ffe6;}input{padding:8px;width:200px;margin:5px;}</style>
+</head>
+<body>
+<h2>🔒 Secure Login - Real victim.local</h2>
+<div style="background:#d4edda;padding:10px;margin:10px 0;border:1px solid #28a745;">
+<strong>✅ Secure Connection:</strong> Your data is encrypted and safe!
+</div>
+<form method="post" action="/process-login">
+<p>Username: <input type="text" name="username" placeholder="Username" required></p>
+<p>Password: <input type="password" name="password" placeholder="Password" required></p>
+<p><button type="submit" style="padding:10px 20px;background:#28a745;color:white;border:none;">Secure Login</button></p>
+</form>
+<p><strong>Security indicators to check:</strong></p>
+<ul>
+<li>🔒 Lock icon in address bar</li>
+<li>📋 Certificate matches domain</li>
+<li>🌐 URL shows https://victim.local</li>
+<li>⚡ HSTS prevents downgrades</li>
+</ul>
+</body></html>';
+  }
 }

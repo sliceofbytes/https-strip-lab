@@ -1,22 +1,28 @@
 services:
+  # ATTACKER'S PROXY - DNS poisoning endpoint
   proxy:
     image: nginx:alpine
-    container_name: hs_proxy
-    ports: ["80:80"]
+    container_name: attacker_proxy
+    ports: 
+      - "80:80"      # HTTP - DNS poisoning landing
+      - "8443:8443"  # HTTPS - Attacker's fake secure site  
+      - "9443:9443"  # HTTPS - Proxy to real legitimate site
     volumes:
       - ./proxy/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./certs:/etc/nginx/certs:ro
     depends_on:
       upstream:
         condition: service_healthy
     networks: 
-      lab:
+      - attack_net
 
+  # LEGITIMATE UPSTREAM SERVER
   upstream:
     image: nginx:alpine
-    container_name: hs_upstream
-    environment: 
-      HSTS: "off"
-      HSTS_HEADER: ""  # Will be set by init script
+    container_name: legitimate_server
+    environment:
+      HSTS: "on"
+      HSTS_HEADER: "max-age=31536000; includeSubDomains; preload"
     volumes:
       - ./upstream/nginx.conf.template:/etc/nginx/templates/nginx.conf.template:ro
       - ./upstream/index.html:/usr/share/nginx/html/index.html:ro
@@ -28,10 +34,10 @@ services:
       timeout: 3s
       retries: 12
     networks:
-      lab:
+      attack_net:
         aliases:
           - upstream
     restart: unless-stopped
 
 networks:
-  lab: {}
+  attack_net:

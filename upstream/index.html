@@ -1,22 +1,51 @@
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>HTTPS Strip Demo</title></head>
-<body style="font:16px system-ui;margin:2rem;">
-  <h1>HTTPS Strip Demo (PWD-safe)</h1>
-  <p>Upstream is HTTPS; proxy on port 80 tries to downgrade any HTTPS redirects/links.</p>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DNS Poisoning Attack Demo</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 2rem; line-height: 1.6; }
+    .attack { background: #ffe6e6; padding: 1rem; border: 2px solid #ff0000; }
+    .legitimate { background: #e6ffe6; padding: 1rem; border: 2px solid #00aa00; }
+    .warning { background: #fff3cd; padding: 1rem; border: 2px solid #ffcc00; }
+  </style>
+</head>
+<body>
+  <h1>🚨 DNS Poisoning Attack Demo</h1>
+  
+  <div class="warning">
+    <h2>⚠️ Demo Purpose</h2>
+    <p>This demonstrates how DNS poisoning can downgrade HTTPS to HTTP, enabling man-in-the-middle attacks.</p>
+  </div>
+
+  <div class="attack">
+    <h2>🎯 Attack Scenario</h2>
+    <p><strong>Current page:</strong> <span id="currentUrl"></span></p>
+    <p><strong>Protocol:</strong> <span id="protocol"></span></p>
+    <p><strong>Security:</strong> <span id="security"></span></p>
+  </div>
+
+  <h2>🔗 Demo Links</h2>
   <ul>
-    <li><a id="httpsLink" href="#">HTTPS link to /secure</a></li>
-    <li><a id="httpLink"  href="#">HTTP link to /insecure</a></li>
+    <li><a href="/phish">🎣 Fake Login Page (HTTP)</a></li>
+    <li><a href="/legitimate">🔒 Compare with Legitimate Site (HTTPS)</a></li>
   </ul>
-  <p id="hsts"></p>
+
   <script>
-    const host = location.host;
-    document.getElementById('httpsLink').href = `https://${host}/secure`;
-    document.getElementById('httpLink').href  = `http://${host}/insecure`;
-    fetch("/", { method:"HEAD" }).then(r=>{
-      const h=r.headers.get("strict-transport-security");
-      document.getElementById("hsts").textContent = "HSTS header: " + (h || "absent");
-    });
+    // Show current page details
+    document.getElementById('currentUrl').textContent = window.location.href;
+    document.getElementById('protocol').textContent = window.location.protocol;
+    
+    const isSecure = window.location.protocol === 'https:';
+    document.getElementById('security').textContent = isSecure ? 
+      '✅ Encrypted (Safe)' : 
+      '❌ Unencrypted (Vulnerable to attacks!)';
+    
+    // Change styling based on security
+    if (!isSecure) {
+      document.body.style.backgroundColor = '#ffe6e6';
+    }
   </script>
 </body>
 </html>
