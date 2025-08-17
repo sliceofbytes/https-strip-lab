@@ -2,14 +2,11 @@ server {
   listen 8443 ssl;
   server_name _;
 
-  # Use a certificate that matches the Play with Docker domain
-  # This simulates an attacker who has obtained a valid certificate for their domain
   ssl_certificate /etc/nginx/certs/attacker.crt;
   ssl_certificate_key /etc/nginx/certs/attacker.key;
   ssl_protocols TLSv1.2 TLSv1.3;
 
   # Attacker's site looks legitimate with proper security headers
-  add_header Content-Type "text/html; charset=utf-8" always;
   add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
   add_header X-Frame-Options "DENY" always;
   add_header X-Content-Type-Options "nosniff" always;
@@ -20,6 +17,7 @@ server {
 
   # Fake victim site that looks legitimate
   location /victim-site {
+    add_header Content-Type "text/html; charset=utf-8" always;
     return 200 '<!DOCTYPE html>
 <html><head><title>Secure Login - victim.com</title>
 <style>
@@ -31,16 +29,16 @@ server {
 </style>
 </head>
 <body>
-<h1>victim.com - Secure Portal</h1>
+<h1>🔒 victim.com - Secure Portal</h1>
 
 <div class="secure">
-<h3>Secure Connection Established</h3>
+<h3>✅ Secure Connection Established</h3>
 <p><strong>This site appears secure because:</strong></p>
 <ul>
-<li>Valid HTTPS certificate</li>
-<li>Legitimate-looking domain</li>
-<li>Security headers present</li>
-<li>Green lock icon in browser</li>
+<li>🔒 Valid HTTPS certificate</li>
+<li>🌐 Legitimate-looking domain</li>
+<li>🛡️ Security headers present</li>
+<li>✅ Green lock icon in browser</li>
 </ul>
 </div>
 
@@ -71,6 +69,7 @@ server {
 
   # Handle credential theft on the "secure" site
   location = /steal-secure-creds {
+    add_header Content-Type "text/html; charset=utf-8" always;
     return 200 '<!DOCTYPE html>
 <html><head><title>Advanced Attack Successful!</title>
 <style>body{font-family:sans-serif;padding:20px;background:#ffe6e6;}</style>
