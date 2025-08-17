@@ -1,25 +1,22 @@
 <!doctype html>
 <html lang="en">
-
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>HTTPS Strip Demo</title>
-</head>
-
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>HTTPS Strip Demo</title></head>
 <body style="font:16px system-ui;margin:2rem;">
-    <h1>HTTPS Strip Demo</h1>
-    <p>This upstream serves <b>HTTPS</b>. The proxy on port 80 tries to downgrade links/redirects.</p>
-    <p><a href="https://victim.local/secure">Link to https://victim.local/secure</a></p>
-    <p><a href="http://victim.local/insecure">Link to http://victim.local/insecure</a></p>
-    <p id="hsts"></p>
-    <script>
-        fetch("/", { method: "HEAD" }).then(r => {
-            const hsts = r.headers.get("strict-transport-security");
-            document.getElementById("hsts").textContent =
-                "HSTS header: " + (hsts || "absent");
-        });
-    </script>
+  <h1>HTTPS Strip Demo (PWD-safe)</h1>
+  <p>Upstream is HTTPS; proxy on port 80 tries to downgrade any HTTPS redirects/links.</p>
+  <ul>
+    <li><a id="httpsLink" href="#">HTTPS link to /secure</a></li>
+    <li><a id="httpLink"  href="#">HTTP link to /insecure</a></li>
+  </ul>
+  <p id="hsts"></p>
+  <script>
+    const host = location.host;
+    document.getElementById('httpsLink').href = `https://${host}/secure`;
+    document.getElementById('httpLink').href  = `http://${host}/insecure`;
+    fetch("/", { method:"HEAD" }).then(r=>{
+      const h=r.headers.get("strict-transport-security");
+      document.getElementById("hsts").textContent = "HSTS header: " + (h || "absent");
+    });
+  </script>
 </body>
-
 </html>
