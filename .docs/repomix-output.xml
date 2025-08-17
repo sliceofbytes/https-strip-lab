@@ -1,0 +1,243 @@
+This file is a merged representation of a subset of the codebase, containing files not matching ignore patterns, combined into a single document by Repomix.
+The content has been processed where comments have been removed.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching these patterns are excluded: node_modules/, bin/, obj/, repomix-output.xml, .repomixignore, .gitignore, .gitattribute, .vscode/, .vs/
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Code comments have been removed from supported file types
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+.devcontainer/devcontainer.json
+.hintrc
+docker-compose.yml
+proxy/nginx.conf
+scripts/mkcert.sh
+upstream/index.html
+upstream/init.sh
+upstream/nginx.conf.template
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path=".devcontainer/devcontainer.json">
+{
+  "name": "https-strip-lab",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "version": "latest"
+    }
+  },
+  "postCreateCommand": "bash scripts/mkcert.sh && docker compose up -d",
+  "customizations": {
+    "codespaces": {
+      "openFiles": ["README.md"]
+    }
+  },
+  "forwardPorts": [80, 443]
+}
+</file>
+
+<file path=".hintrc">
+{
+  "extends": [
+    "development"
+  ],
+  "hints": {
+    "no-inline-styles": "off"
+  }
+}
+</file>
+
+<file path="scripts/mkcert.sh">
+ls -l certs/victim.local.crt certs/victim.local.key
+
+openssl req -x509 -nodes -newkey rsa:2048 -days 3650 \
+  -subj "/CN=victim.local" \
+  -keyout certs/victim.local.key -out certs/victim.local.crt
+</file>
+
+<file path="upstream/index.html">
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>HTTPS Strip Demo</title></head>
+<body style="font:16px system-ui;margin:2rem;">
+  <h1>HTTPS Strip Demo (PWD-safe)</h1>
+  <p>Upstream is HTTPS; proxy on port 80 tries to downgrade any HTTPS redirects/links.</p>
+  <ul>
+    <li><a id="httpsLink" href="#">HTTPS link to /secure</a></li>
+    <li><a id="httpLink"  href="#">HTTP link to /insecure</a></li>
+  </ul>
+  <p id="hsts"></p>
+  <script>
+    const host = location.host;
+    document.getElementById('httpsLink').href = `https://${host}/secure`;
+    document.getElementById('httpLink').href  = `http://${host}/insecure`;
+    fetch("/", { method:"HEAD" }).then(r=>{
+      const h=r.headers.get("strict-transport-security");
+      document.getElementById("hsts").textContent = "HSTS header: " + (h || "absent");
+    });
+  </script>
+</body>
+</html>
+</file>
+
+<file path="upstream/init.sh">
+if [ "$HSTS" = "on" ]; then
+    export HSTS_HEADER="max-age=31536000; includeSubDomains; preload"
+else
+    export HSTS_HEADER=""
+fi
+
+echo "HSTS setting: $HSTS"
+echo "HSTS_HEADER: $HSTS_HEADER"
+</file>
+
+<file path="upstream/nginx.conf.template">
+server {
+  listen 443 ssl;
+  server_name _;
+
+  ssl_certificate     /etc/nginx/certs/victim.local.crt;
+  ssl_certificate_key /etc/nginx/certs/victim.local.key;
+
+  # This will be replaced by envsubst
+  # add_header Strict-Transport-Security "${HSTS_HEADER}" always;
+
+  root /usr/share/nginx/html;
+  index index.html;
+
+  location / { try_files $uri /index.html; }
+  location = /secure   { return 200 "secure content\n"; }
+  location = /insecure { return 200 "insecure content\n"; }
+}
+</file>
+
+<file path="proxy/nginx.conf">
+worker_processes auto;
+events { worker_connections 1024; }
+http {
+  resolver 127.0.0.11 ipv6=off valid=10s;
+  resolver_timeout 2s;
+
+  # rewrite https://host/... -> http://host/...
+  map $upstream_http_location $rewritten_location {
+    default $upstream_http_location;
+    ~^https://([^/]+)(/?.*)$ http://$1$2;
+  }
+
+  # variable to make nginx resolve at request time (not startup)
+  map "" $u_host { default "upstream"; }
+
+  server {
+    listen 80;
+    server_name _;
+
+    location / {
+      proxy_pass https://$u_host:443;
+      proxy_connect_timeout 2s;
+      proxy_read_timeout 10s;
+      proxy_send_timeout 10s;
+
+      proxy_ssl_server_name on;
+      proxy_ssl_name $u_host;
+      proxy_ssl_verify off;
+
+      proxy_hide_header Strict-Transport-Security;
+      proxy_hide_header Content-Security-Policy;
+
+      proxy_redirect off;
+      proxy_set_header Host $host;
+      proxy_set_header X-Forwarded-Proto http;
+
+      proxy_next_upstream error timeout invalid_header http_502 http_503 http_504;
+      proxy_intercept_errors on;
+      error_page 301 302 307 308 = @handle_redirect;
+    }
+
+    location @handle_redirect {
+      internal;
+      add_header Location $rewritten_location always;
+      return 302;
+    }
+  }
+}
+</file>
+
+<file path="docker-compose.yml">
+services:
+  proxy:
+    image: nginx:alpine
+    container_name: hs_proxy
+    ports: ["80:80"]
+    volumes:
+      - ./proxy/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      upstream:
+        condition: service_healthy
+    networks:
+      lab:
+
+  upstream:
+    image: nginx:alpine
+    container_name: hs_upstream
+    environment:
+      HSTS: "off"
+      HSTS_HEADER: ""  # Will be set by init script
+    volumes:
+      - ./upstream/nginx.conf.template:/etc/nginx/templates/nginx.conf.template:ro
+      - ./upstream/index.html:/usr/share/nginx/html/index.html:ro
+      - ./certs:/etc/nginx/certs:ro
+      - ./upstream/init.sh:/docker-entrypoint.d/10-init-hsts.sh:ro
+    healthcheck:
+      test: ["CMD", "sh", "-c", "apk add --no-cache curl >/dev/null 2>&1 || true; curl -kfs https://localhost/secure"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    networks:
+      lab:
+        aliases:
+          - upstream
+    restart: unless-stopped
+
+networks:
+  lab: {}
+</file>
+
+</files>
