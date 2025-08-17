@@ -16,7 +16,7 @@ services:
     container_name: hs_upstream
     environment: 
       HSTS: "off"
-      HSTS_HEADER: ""
+      HSTS_HEADER: ""  # Will be set by init script
     volumes:
       - ./upstream/nginx.conf.template:/etc/nginx/templates/nginx.conf.template:ro
       - ./upstream/index.html:/usr/share/nginx/html/index.html:ro
