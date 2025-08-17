@@ -14,7 +14,7 @@ services:
   upstream:
     image: nginx:alpine
     container_name: hs_upstream
-    environment: [HSTS=off]
+    environment: { HSTS: "off" }
     volumes:
       - ./upstream/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./upstream/index.html:/usr/share/nginx/html/index.html:ro
