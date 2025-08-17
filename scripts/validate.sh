@@ -28,8 +28,23 @@ done
 # Validate nginx config syntax
 echo ""
 echo "2️⃣ Validating nginx configuration..."
-echo "Testing proxy/nginx.conf..."
 
+# First, check if certificates exist, if not, generate them
+if [ ! -f "certs/attacker.crt" ] || [ ! -f "certs/attacker.key" ]; then
+    echo "   Certificates not found, generating them for validation..."
+    if [ -f "scripts/mkcert.sh" ]; then
+        bash scripts/mkcert.sh > /dev/null 2>&1
+    else
+        echo "   Creating temporary self-signed certificates for validation..."
+        mkdir -p certs
+        openssl req -x509 -nodes -newkey rsa:2048 -days 1 \
+          -subj "/CN=temp" \
+          -keyout certs/attacker.key \
+          -out certs/attacker.crt > /dev/null 2>&1
+    fi
+fi
+
+echo "Testing proxy/nginx.conf..."
 # Capture both stdout and stderr
 nginx_output=$(docker run --rm -v "$(pwd)/proxy/nginx.conf:/tmp/nginx.conf:ro" nginx:alpine nginx -t -c /tmp/nginx.conf 2>&1)
 nginx_exit_code=$?
@@ -59,7 +74,10 @@ EOF
     cat "upstream/nginx.conf.template" >> "$temp_config"
     echo "}" >> "$temp_config"
     
-    upstream_output=$(docker run --rm -v "$temp_config:/tmp/nginx.conf:ro" nginx:alpine nginx -t -c /tmp/nginx.conf 2>&1)
+    upstream_output=$(docker run --rm \
+      -v "$temp_config:/tmp/nginx.conf:ro" \
+      -v "$(pwd)/certs:/etc/nginx/certs:ro" \
+      nginx:alpine nginx -t -c /tmp/nginx.conf 2>&1)
     upstream_exit_code=$?
     
     if [ $upstream_exit_code -eq 0 ]; then
