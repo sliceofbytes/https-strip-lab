@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "🔍 Pre-Deployment Validation"
+echo " Pre-Deployment Validation "
 echo "============================"
 
 errors=0

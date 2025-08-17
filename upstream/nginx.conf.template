@@ -6,7 +6,7 @@ server {
   ssl_certificate_key /etc/nginx/certs/attacker.key;
   ssl_protocols TLSv1.2 TLSv1.3;
 
-  # Attacker's site looks legitimate with proper security headers
+  # Attacker site
   add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
   add_header X-Frame-Options "DENY" always;
   add_header X-Content-Type-Options "nosniff" always;
@@ -15,7 +15,7 @@ server {
   root /usr/share/nginx/html;
   index index.html;
 
-  # Fake victim site that looks legitimate
+  # Fake site for victim in our demo
   location /victim-site {
     add_header Content-Type "text/html; charset=utf-8" always;
     return 200 '<!DOCTYPE html>
@@ -29,16 +29,16 @@ server {
 </style>
 </head>
 <body>
-<h1>🔒 victim.com - Secure Portal</h1>
+<h1>victim.com - Secure Portal</h1>
 
 <div class="secure">
-<h3>✅ Secure Connection Established</h3>
+<h3>Secure Connection Established</h3>
 <p><strong>This site appears secure because:</strong></p>
 <ul>
-<li>🔒 Valid HTTPS certificate</li>
-<li>🌐 Legitimate-looking domain</li>
-<li>🛡️ Security headers present</li>
-<li>✅ Green lock icon in browser</li>
+<li>Valid HTTPS certificate</li>
+<li>Legitimate-looking domain</li>
+<li>Security headers present</li>
+<li>Green lock icon in browser</li>
 </ul>
 </div>
 

@@ -10,12 +10,12 @@ services:
     networks: 
       - attack_net
 
-  # Attacker's HTTPS Site - Looks legitimate with valid cert
+  # Attacker HTTPS Site
   attacker_https:
     image: nginx:alpine
     container_name: attacker_https_site
     ports:
-      - "8443:8443"  # HTTPS - Attacker's "legitimate" site
+      - "8443:8443"  # HTTPS - Attackers site
     environment:
       HSTS: "on"
       HSTS_HEADER: "max-age=31536000; includeSubDomains; preload"
