@@ -5,8 +5,11 @@ set -e
 echo "🚨 Complete DNS Poisoning Attack Demo 🚨"
 echo "=========================================="
 
-# Setup
-chmod +x scripts/mkcert.sh upstream/init.sh
+# Create required directories
+mkdir -p proxy upstream scripts certs
+
+# Setup permissions
+chmod +x scripts/mkcert.sh upstream/init.sh 2>/dev/null || true
 
 # Generate certificates
 echo "1️⃣ Generating SSL certificates..."
@@ -27,26 +30,22 @@ sleep 5
 echo ""
 echo "4️⃣ Testing all attack vectors..."
 
-echo "Testing HTTP DNS poisoning..."
-if curl -s http://localhost/ | grep -q "DNS Poisoning"; then
-    echo "✅ HTTP attack site working"
-else
-    echo "❌ HTTP attack site failed"
-fi
+# Quick endpoint tests
+endpoints=(
+    "http://localhost/:DNS Poisoning:HTTP attack site"
+    "https://localhost:8443/fake-victim:Secure:Fake HTTPS site"  
+    "https://localhost:9443/secure:REAL victim.local:Legitimate site"
+)
 
-echo "Testing attacker HTTPS site..."
-if curl -k -s https://localhost:8443/fake-victim | grep -q "Secure"; then
-    echo "✅ Fake HTTPS site working"
-else
-    echo "❌ Fake HTTPS site failed"
-fi
-
-echo "Testing legitimate site..."
-if curl -k -s https://localhost:9443/secure | grep -q "REAL victim.local"; then
-    echo "✅ Legitimate site working"
-else
-    echo "❌ Legitimate site failed"
-fi
+for endpoint in "${endpoints[@]}"; do
+    IFS=':' read -r url expected desc <<< "$endpoint"
+    echo -n "Testing $desc... "
+    if curl -k -s --max-time 5 "$url" | grep -q "$expected"; then
+        echo "✅"
+    else
+        echo "❌ Failed"
+    fi
+done
 
 echo ""
 echo "🎯 COMPLETE ATTACK DEMO READY!"
