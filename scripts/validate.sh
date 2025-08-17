@@ -44,11 +44,22 @@ else
     errors=$((errors + 1))
 fi
 
-# Also test the upstream config if it exists
+# Test the upstream template by wrapping it in a complete nginx config
 if [ -f "upstream/nginx.conf.template" ]; then
     echo ""
     echo "Testing upstream/nginx.conf.template..."
-    upstream_output=$(docker run --rm -v "$(pwd)/upstream/nginx.conf.template:/tmp/nginx.conf:ro" nginx:alpine nginx -t -c /tmp/nginx.conf 2>&1)
+    
+    # Create a temporary complete nginx config with the template content
+    temp_config=$(mktemp)
+    cat > "$temp_config" << 'EOF'
+worker_processes auto;
+events { worker_connections 1024; }
+http {
+EOF
+    cat "upstream/nginx.conf.template" >> "$temp_config"
+    echo "}" >> "$temp_config"
+    
+    upstream_output=$(docker run --rm -v "$temp_config:/tmp/nginx.conf:ro" nginx:alpine nginx -t -c /tmp/nginx.conf 2>&1)
     upstream_exit_code=$?
     
     if [ $upstream_exit_code -eq 0 ]; then
@@ -59,6 +70,9 @@ if [ -f "upstream/nginx.conf.template" ]; then
         echo "$upstream_output" | sed 's/^/   /'
         errors=$((errors + 1))
     fi
+    
+    # Clean up temp file
+    rm -f "$temp_config"
 fi
 
 # Check docker-compose syntax  
