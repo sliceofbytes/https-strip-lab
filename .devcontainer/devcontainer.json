@@ -1,0 +1,15 @@
+{
+  "name": "https-strip-lab",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "version": "latest"
+    }
+  },
+  "postCreateCommand": "bash scripts/mkcert.sh && docker compose up -d",
+  "customizations": {
+    "codespaces": {
+      "openFiles": ["README.md"]
+    }
+  },
+  "forwardPorts": [80, 443]
+}
